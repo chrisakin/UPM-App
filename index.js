@@ -1,16 +1,52 @@
 /*
 *Primary file for the API
 */
-
-// Dependecies
+// Dependecies 
 
 var http = require('http');
+var https = require ('https');
 var url = require('url');
 var StringDecoder = require('string_decoder').StringDecoder;
+var config = require('./config');
+var fs = require('fs');
+var _data = require('./lib/data')
 
-// The server should respond to all request with a string
-var server = http.createServer(function(req, res) {
 
+//TESTING
+// @TODO delete this
+_data.create('test', 'newFile', {'foo' : 'bar'}, function(err){
+    console.log('this was the error', err);
+});
+
+// Instantiate the http server
+var httpServer = http.createServer(function(req, res) {
+    unifiedServer(req, res);      
+});
+
+
+// Start the http server
+    httpServer.listen(config.httpPort, function(){
+    console.log("The server is listening on port "+ config.httpPort);  
+});
+
+// Instantiate the https server
+var httpsServerOptions = {
+    'key': fs.readFileSync('./https/key.pem'),
+    'cert': fs.readFileSync('./https/cert.pem') 
+};
+
+var httpsServer = https.createServer(httpsServerOptions, function(req, res) {
+    unifiedServer(req, res);      
+});
+
+// Start the https server
+    httpsServer.listen(config.httpsPort, function(){
+    console.log("The server is listening on port "+ config.httpsPort); 
+});
+
+// All the server logic for tboth the http and https server
+var unifiedServer = function (req, res){
+    
     //Get the URL and parse it
     var parsedUrl = url.parse(req.url, true);
 
@@ -77,28 +113,26 @@ var server = http.createServer(function(req, res) {
         //Log the request path
     console.log(`Returning this response :`, statusCode, payloadString);
 
-        })
-       
-
-})
-
- 
-});
-
-// Start the server and listen to port 3000
-    server.listen(3000, function(){
-    console.log("The server is listening on port 3000")
-});
-
+        });
+    });
+}
 
 // Define our handlers
 var handlers ={};
 
+// Ping handler
+handlers.ping = function(data, callback){
+    callback(200);
+}
+
+/*
 // Sample handler
 handlers.sample = function (data, callback){
     // Callback a http status code and a payload object
     callback(406, {'name': "sample handler"})
 };
+*/
+
 
 // Not found handler
 handlers.notFound = function(data, callback){
@@ -107,5 +141,5 @@ handlers.notFound = function(data, callback){
 
 //Define a request router
 var router = {
-    'sample': handlers.sample
+    'ping': handlers.ping
 }
